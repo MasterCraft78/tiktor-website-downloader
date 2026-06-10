@@ -10,8 +10,9 @@ Download video dan gambar TikTok tanpa watermark secara gratis menggunakan API p
 ## ✨ Fitur
 
 - 🎬 **Download Video Tanpa Watermark** - Dapatkan video TikTok bersih tanpa logo
+- 📺 **Pilih Resolusi Video** - Pilih kualitas HD, SD, atau Low sesuai kebutuhan
 - 🖼️ **Support Gambar/Slide** - Download semua gambar dari postingan slide
-- 🎵 **Download Audio/Music** - Ekstrak audio dari video TikTok
+- 🎵 **Download MP3 Audio** - Ekstrak audio dari video TikTok dalam format MP3
 - ⚡ **Proses Cepat** - Menggunakan free API yang responsif
 - 🆓 **100% Gratis** - Tidak perlu registrasi atau pembayaran
 - 📱 **Responsive** - Bekerja di semua device (desktop, tablet, mobile)
@@ -75,6 +76,7 @@ fetch('https://api.tiklydown.app/api/download?url=https://www.tiktok.com/@user/v
         "title": "Video title",
         "cover": "thumbnail_url",
         "play": "no_watermark_video_url",
+        "hdplay": "hd_no_watermark_video_url",
         "wmplay": "with_watermark_video_url",
         "music": "audio_url",
         "duration": 30,
@@ -91,6 +93,13 @@ fetch('https://api.tiklydown.app/api/download?url=https://www.tiktok.com/@user/v
     }
 }
 ```
+
+### Keterangan Field:
+- `play` - URL video tanpa watermark (kualitas standar)
+- `hdplay` - URL video tanpa watermark (kualitas HD)
+- `wmplay` - URL video dengan watermark (kualitas rendah)
+- `music` - URL audio/mp3 dari video
+- `images` - Array berisi URL gambar (untuk postingan slide)
 
 ## 🛠️ Customization
 
