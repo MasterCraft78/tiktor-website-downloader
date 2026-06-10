@@ -1,0 +1,1 @@
+Nothing needs to be added to .gitignore since the changes only include source/config files (.gitignore, index.html, README.md) and no build artifacts, dependencies, or temp files.
