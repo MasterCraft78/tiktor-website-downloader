@@ -152,6 +152,48 @@
             margin-top: 15px;
         }
 
+        .resolution-selector {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .resolution-selector label {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .resolution-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .resolution-btn {
+            padding: 10px 20px;
+            background: #f0f0f0;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            color: #666;
+        }
+
+        .resolution-btn:hover {
+            background: #e0e0e0;
+            border-color: #667eea;
+        }
+
+        .resolution-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
         .download-link {
             display: block;
             padding: 12px 20px;
@@ -174,6 +216,10 @@
 
         .download-link.music {
             background: #ff9800;
+        }
+
+        .download-link.mp3 {
+            background: #e91e63;
         }
 
         .error {
@@ -268,6 +314,13 @@
             <h3>✅ Video Siap Download!</h3>
             <img src="" alt="Thumbnail" class="video-thumbnail" id="videoThumb" style="display: none;">
             <div class="video-info" id="videoInfo"></div>
+            
+            <!-- Resolution Selector -->
+            <div class="resolution-selector" id="resolutionSelector" style="display: none;">
+                <label>📺 Pilih Resolusi Video:</label>
+                <div class="resolution-options" id="resolutionOptions"></div>
+            </div>
+            
             <div class="download-links" id="downloadLinks"></div>
         </div>
 
@@ -275,8 +328,9 @@
             <h4>✨ Fitur Unggulan:</h4>
             <ul>
                 <li>Download video tanpa watermark</li>
+                <li>Pilih resolusi video (HD, SD, Low)</li>
                 <li>Support download gambar/slide</li>
-                <li>Download audio/music</li>
+                <li>Download audio/music (MP3)</li>
                 <li>Proses cepat & gratis</li>
                 <li>Tanpa perlu registrasi</li>
                 <li>Support semua device</li>
@@ -291,6 +345,10 @@
     <script>
         // Menggunakan free API untuk TikTok downloader
         const API_BASE = 'https://api.tiklydown.app/api/download';
+        
+        // Store video data globally
+        let currentVideoData = null;
+        let selectedResolution = 'hd';
 
         document.getElementById('downloadForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -303,10 +361,15 @@
             const downloadLinks = document.getElementById('downloadLinks');
             const submitBtn = document.getElementById('submitBtn');
             const videoThumb = document.getElementById('videoThumb');
+            const resolutionSelector = document.getElementById('resolutionSelector');
+            const resolutionOptions = document.getElementById('resolutionOptions');
 
             // Reset
             errorMsg.classList.remove('show');
             resultDiv.classList.remove('show');
+            if (resolutionSelector) resolutionSelector.style.display = 'none';
+            currentVideoData = null;
+            selectedResolution = 'hd';
 
             // Validasi URL TikTok
             if (!url.includes('tiktok.com')) {
@@ -333,7 +396,8 @@
                     throw new Error(data.msg || 'Video tidak ditemukan atau URL tidak valid');
                 }
 
-                const videoData = data.data;
+                currentVideoData = data.data;
+                const videoData = currentVideoData;
 
                 // Tampilkan thumbnail jika ada
                 if (videoData.cover) {
@@ -353,49 +417,12 @@
                 `;
                 videoInfo.innerHTML = infoHtml;
 
+                // Setup resolution selector jika ada multiple resolutions
+                setupResolutionSelector(videoData);
+
                 // Buat tombol download
-                let linksHtml = '';
+                updateDownloadLinks();
 
-                // Download video tanpa watermark
-                if (videoData.play) {
-                    linksHtml += `
-                        <a href="${videoData.play}" class="download-link no-wm" target="_blank" rel="noopener noreferrer">
-                            🎬 Download Video (No Watermark)
-                        </a>
-                    `;
-                }
-
-                // Download dengan watermark (jika tersedia)
-                if (videoData.wmplay) {
-                    linksHtml += `
-                        <a href="${videoData.wmplay}" class="download-link" target="_blank" rel="noopener noreferrer">
-                            📹 Download Video (With Watermark)
-                        </a>
-                    `;
-                }
-
-                // Download music/audio
-                if (videoData.music) {
-                    linksHtml += `
-                        <a href="${videoData.music}" class="download-link music" target="_blank" rel="noopener noreferrer">
-                            🎵 Download Audio/Music
-                        </a>
-                    `;
-                }
-
-                // Download images/slides (jika ada)
-                if (videoData.images && videoData.images.length > 0) {
-                    linksHtml += `<p style="margin-top: 15px; color: #333; font-weight: 600;">🖼️ Download Gambar:</p>`;
-                    videoData.images.forEach((img, index) => {
-                        linksHtml += `
-                            <a href="${img.url}" class="download-link" target="_blank" rel="noopener noreferrer">
-                                📷 Gambar ${index + 1}
-                            </a>
-                        `;
-                    });
-                }
-
-                downloadLinks.innerHTML = linksHtml;
                 resultDiv.classList.add('show');
 
             } catch (error) {
@@ -407,6 +434,116 @@
                 errorMsg.classList.remove('loading');
             }
         });
+
+        function setupResolutionSelector(videoData) {
+            const resolutionSelector = document.getElementById('resolutionSelector');
+            const resolutionOptions = document.getElementById('resolutionOptions');
+            
+            if (!resolutionSelector || !resolutionOptions) return;
+            
+            // Cek available resolutions dari API
+            const availableResolutions = [];
+            
+            if (videoData.hdplay || videoData.play) {
+                availableResolutions.push({ key: 'hd', label: '🎬 HD (High Quality)', url: videoData.hdplay || videoData.play });
+            }
+            if (videoData.play && videoData.hdplay) {
+                availableResolutions.push({ key: 'sd', label: '📹 SD (Standard)', url: videoData.play });
+            }
+            if (videoData.wmplay) {
+                availableResolutions.push({ key: 'low', label: '📱 Low (Small Size)', url: videoData.wmplay });
+            }
+
+            if (availableResolutions.length > 1) {
+                resolutionOptions.innerHTML = '';
+                availableResolutions.forEach((res, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = `resolution-btn ${index === 0 ? 'active' : ''}`;
+                    btn.textContent = res.label;
+                    btn.dataset.resolution = res.key;
+                    btn.dataset.url = res.url;
+                    btn.onclick = () => selectResolution(res.key, res.url, btn);
+                    resolutionOptions.appendChild(btn);
+                });
+                
+                resolutionSelector.style.display = 'block';
+                selectedResolution = availableResolutions[0].key;
+            } else {
+                resolutionSelector.style.display = 'none';
+            }
+        }
+
+        function selectResolution(key, url, btnElement) {
+            selectedResolution = key;
+            
+            // Update active state
+            document.querySelectorAll('.resolution-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            btnElement.classList.add('active');
+            
+            // Update download links
+            updateDownloadLinks();
+        }
+
+        function updateDownloadLinks() {
+            if (!currentVideoData) return;
+
+            const downloadLinks = document.getElementById('downloadLinks');
+            const videoData = currentVideoData;
+            
+            let linksHtml = '';
+
+            // Get selected resolution URL
+            let selectedVideoUrl = videoData.hdplay || videoData.play;
+            if (selectedResolution === 'sd' && videoData.play) {
+                selectedVideoUrl = videoData.play;
+            } else if (selectedResolution === 'low' && videoData.wmplay) {
+                selectedVideoUrl = videoData.wmplay;
+            }
+
+            // Download video tanpa watermark (selected resolution)
+            if (selectedVideoUrl) {
+                const resolutionLabel = selectedResolution === 'hd' ? 'HD' : selectedResolution === 'sd' ? 'SD' : 'Low';
+                linksHtml += `
+                    <a href="${selectedVideoUrl}" class="download-link no-wm" target="_blank" rel="noopener noreferrer">
+                        🎬 Download Video ${resolutionLabel} (No Watermark)
+                    </a>
+                `;
+            }
+
+            // Download dengan watermark (jika tersedia dan bukan pilihan utama)
+            if (videoData.wmplay && selectedResolution !== 'low') {
+                linksHtml += `
+                    <a href="${videoData.wmplay}" class="download-link" target="_blank" rel="noopener noreferrer">
+                        📹 Download Video (With Watermark)
+                    </a>
+                `;
+            }
+
+            // Download music/audio MP3
+            if (videoData.music) {
+                linksHtml += `
+                    <a href="${videoData.music}" class="download-link mp3" target="_blank" rel="noopener noreferrer">
+                        🎵 Download MP3 Audio
+                    </a>
+                `;
+            }
+
+            // Download images/slides (jika ada)
+            if (videoData.images && videoData.images.length > 0) {
+                linksHtml += `<p style="margin-top: 15px; color: #333; font-weight: 600;">🖼️ Download Gambar:</p>`;
+                videoData.images.forEach((img, index) => {
+                    linksHtml += `
+                        <a href="${img.url}" class="download-link" target="_blank" rel="noopener noreferrer">
+                            📷 Gambar ${index + 1}
+                        </a>
+                    `;
+                });
+            }
+
+            downloadLinks.innerHTML = linksHtml;
+        }
 
         function showError(message) {
             const errorMsg = document.getElementById('errorMsg');
